@@ -1,0 +1,22 @@
+{
+  "identity_columns": ["sample_id", "cycle"],
+  "conflict_columns": ["capacity"],
+  "duplicate_columns": ["sample_id", "cycle", "capacity"],
+  "identifier_columns": ["sample_id"],
+  "split_column": "existing_split",
+  "group_columns": ["sample_id"],
+  "numeric_columns": ["cycle", "capacity"],
+  "bounds": {"capacity": [0, null], "temperature": [0, null], "cycle": [0, null]},
+  "units": {"temperature": {"column": "temperature_unit", "expected": "K"}},
+  "unit_aliases": {"C": "degC"},
+  "compositions": [{"columns": ["ec_fraction", "dmc_fraction"], "total": 1, "tolerance": 0.000001}],
+  "near_duplicates": {"ec_fraction": 0.001, "dmc_fraction": 0.001},
+  "density_columns": ["ec_fraction", "dmc_fraction"],
+  "density_scales": {"ec_fraction": 0.1, "dmc_fraction": 0.1},
+  "density_radius": 1,
+  "min_neighbors": 2,
+  "smiles_column": "smiles",
+  "molecular_similarity": 0.8,
+  "provenance_columns": ["source", "lab", "measured_at"],
+  "rules": [{"name": "Nonnegative cycle count", "assert": {"column": "cycle", "op": "ge", "value": 0}}]
+}

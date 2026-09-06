@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from . import audit_extensions
 from .common import JsonResult, finite_number, frame, metadata, missing, names, numeric, require
 
 
@@ -21,7 +22,28 @@ class AuditConfig:
     unavailable_features: list[str] = field(default_factory=list)
     target_column: str | None = None
 
+    check_missing: bool = True
+    numeric_columns: list[str] = field(default_factory=list)
+    identity_columns: list[str] = field(default_factory=list)
+    conflict_columns: list[str] = field(default_factory=list)
+    conflict_tolerance: float = 0.0
+    identifier_columns: list[str] = field(default_factory=list)
+    correlation_threshold: float = 0.995
+    unit_aliases: dict[str, str] = field(default_factory=dict)
+    compositions: list[dict] = field(default_factory=list)
+    rules: list[dict] = field(default_factory=list)
+    near_duplicates: dict[str, float] = field(default_factory=dict)
+    smiles_column: str | None = None
+    molecular_similarity: float | None = None
+    density_columns: list[str] = field(default_factory=list)
+    density_scales: dict[str, float] = field(default_factory=dict)
+    density_radius: float = 1.0
+    min_neighbors: int = 3
+    max_pair_comparisons: int = 2000000
+    provenance_patterns: dict[str, str] = field(default_factory=dict)
+
     def __post_init__(self):
+        audit_extensions.validate(self)
         for key in ("group_columns", "provenance_columns", "feature_columns", "unavailable_features"):
             names(getattr(self, key), key)
         if self.duplicate_columns is not None:
@@ -88,12 +110,13 @@ class AuditReport(JsonResult):
 def audit(data, config=None):
     """Return a JSON-serializable report without modifying the input DataFrame."""
     cfg = config or AuditConfig()
+    cfg.__post_init__()
     data = frame(data)
     duplicates = cfg.duplicate_columns or [c for c in data if c != cfg.split_column]
     if not duplicates:
         raise ValueError("No columns remain for duplicate comparison.")
     required = (duplicates + cfg.group_columns + list(cfg.bounds) + list(cfg.units)
-                + list(cfg.sparse_bins) + cfg.feature_columns)
+                + list(cfg.sparse_bins) + cfg.feature_columns + cfg.numeric_columns)
     require(data, required)
     if cfg.split_column:
         require(data, [cfg.split_column])
@@ -103,7 +126,15 @@ def audit(data, config=None):
 
     def add(code, severity, columns, mask, message, suggestion, details=None):
         rows = np.flatnonzero(np.asarray(mask, dtype=bool)).tolist()
-        findings.append(Finding(code, severity, columns, rows, message, suggestion, details or {}))
+        evidence = dict(details or {})
+        available = [c for c in dict.fromkeys(columns) if c in data]
+        evidence["affected_count"] = len(rows)
+        evidence["raw_examples"] = data.iloc[rows[:20]][available].to_dict(orient="records")
+        evidence["row_examples"] = rows[:20]
+        evidence["examples_truncated"] = len(rows) > 20 or evidence.get("examples_truncated", False)
+        findings.append(Finding(code, severity, columns, rows, message, suggestion, evidence))
+
+    normalized = audit_extensions.normalized_units(data, cfg, add) if cfg.units else data
 
     ran.append("duplicates")
     duplicated = data.duplicated(subset=duplicates, keep=False)
@@ -153,11 +184,11 @@ def audit(data, config=None):
     else:
         skipped["feature_leakage"] = "No feature_columns configured."
 
-    if cfg.bounds or cfg.sparse_bins:
+    if cfg.bounds or cfg.sparse_bins or cfg.numeric_columns:
         ran.append("numeric_validity")
     values = {}
-    for col in dict.fromkeys([*cfg.bounds, *cfg.sparse_bins]):
-        values[col] = numeric(data[col])
+    for col in dict.fromkeys([*cfg.bounds, *cfg.sparse_bins, *cfg.numeric_columns]):
+        values[col] = numeric(normalized[col])
         invalid = ~np.isfinite(values[col])
         if invalid.any():
             add("invalid_numeric", "error", [col], invalid,
@@ -176,20 +207,6 @@ def audit(data, config=None):
 
     if cfg.units:
         ran.append("units")
-        for col, rule in cfg.units.items():
-            unit_col, expected = rule["column"], rule["expected"].strip()
-            if unit_col not in data:
-                add("missing_unit_column", "error", [col, unit_col], np.ones(len(data), bool),
-                    "The configured unit metadata column is absent.", "Supply explicit unit metadata.")
-                continue
-            absent = missing(data[unit_col])
-            mismatch = ~absent & data[unit_col].astype(str).str.strip().ne(expected)
-            if absent.any():
-                add("missing_unit", "error", [col, unit_col], absent, "Unit metadata is missing.", "Recover units from the source.")
-            if mismatch.any():
-                add("unit_mismatch", "warning", [col, unit_col], mismatch,
-                    f"Unit labels differ from the configured canonical label {expected!r}.",
-                    "Check compatibility and convert explicitly; this check does not convert or infer units.", {"expected": expected})
     else:
         skipped["units"] = "No unit rules configured."
 
@@ -221,4 +238,11 @@ def audit(data, config=None):
                     "Expand the bins if these rows are within the intended study domain.")
     else:
         skipped["sparse_regions"] = "No sparse_bins configured."
-    return AuditReport(len(data), findings, ran, skipped, metadata(data, cfg))
+    audit_extensions.extended_checks(data, normalized, cfg, add, ran, skipped)
+    meta = metadata(data, cfg)
+    meta["canonical_units"] = {c: r["expected"] for c, r in cfg.units.items()}
+    meta["limitations"] = ["Configured checks cannot certify scientific validity or causal leakage.",
+                           "Evidence examples are capped at 20 rows; affected row positions are complete.",
+                           "Near-duplicate pair examples are capped at 100; counts are complete.",
+                           "Provenance syntax is checked locally; source authenticity is not verified."]
+    return AuditReport(len(data), findings, ran, skipped, meta)

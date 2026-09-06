@@ -1,32 +1,10 @@
 # Configuration and scientific assumptions
 
-Both commands accept a JSON object. Unknown fields cause an error. Python callers construct the equivalent `AuditConfig` or `SplitConfig`. These tools accept nonempty tables with unique string column names and scalar cell values. They never impute, convert units, deduplicate, or train a model automatically.
+Both commands accept a JSON object. Unknown fields cause an error. Python callers construct the equivalent `AuditConfig` or `SplitConfig`. These tools accept nonempty tables with unique string column names and scalar cell values. They never impute, overwrite source measurements, deduplicate, or train a model automatically.
 
 ## Audit configuration
 
-All fields are optional. An empty object runs exact duplicate detection only and reports the other categories as skipped.
-
-| Field | Default | Meaning |
-| --- | --- | --- |
-| `duplicate_columns` | All columns except `split_column` | Columns that jointly define a repeated record; missing values compare equal. Cannot include the partition column. |
-| `split_column` | Unset | Existing partition labels to compare. Every distinct nonblank label is a separate partition, including validation. |
-| `group_columns` | `[]` | Each column independently defines a group that should not overlap partitions, such as cell ID or batch ID. |
-| `bounds` | `{}` | Numeric column to inclusive `[lower, upper]`; either endpoint may be `null`, but not both. Units must be understood before setting bounds. |
-| `units` | `{}` | Measurement column to `{"column": "unit_column", "expected": "K"}`. Compares trimmed, case-sensitive labels; aliases are not inferred. |
-| `provenance_columns` | `[]` | Required metadata columns. Missing columns, null cells, and whitespace-only cells produce findings. |
-| `sparse_bins` | `{}` | Numeric column to a strictly increasing list of finite interval edges. |
-| `min_bin_count` | `3` | Minimum row count per interval. Empty intervals are also reported. |
-| `feature_columns` | `[]` | Declared model inputs to check for explicit feature leakage. |
-| `unavailable_features` | `[]` | Feature names known to be unavailable when a prediction would be made. |
-| `target_column` | Unset | Target used for target-as-feature and exact-copy checks. |
-
-Bounds and bin checks flag missing, nonnumeric, and infinite measurements. Boolean values in configured numeric measurements are rejected. Missing configured measurement, grouping, split, or feature columns are configuration errors. Missing provenance and unit metadata are findings so the report can describe those gaps.
-
-Sparse intervals are left-inclusive and right-exclusive, except the final interval includes its right edge. Counts reflect rows, which may contain repeated measurements from the same experiment. These are marginal coverage checks: dense one-dimensional intervals do not establish dense joint coverage.
-
-A feature matching the target on all jointly observed rows (at least three) produces a warning. This is a narrow heuristic; transformed targets and other causal leakage need expert review. No target-correlation threshold is used to declare leakage.
-
-Audit severity indicates the strength of the configured rule, not proof of scientific invalidity. For example, a temperature bound is only meaningful for the declared unit. `unit_mismatch` does not distinguish an incompatible dimension from a harmless alternate spelling. Review unit findings before interpreting bounds.
+The expanded audit configuration and domain plugins are documented in [AUDITOR.md](AUDITOR.md). Unit conversions are performed only in an internal copy; source data is preserved.
 
 ## Split configuration
 

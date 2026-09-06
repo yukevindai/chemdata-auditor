@@ -22,7 +22,7 @@ def test_all_six_categories_and_positional_rows_without_mutation():
         group_columns=["sample"], split_column="partition", bounds={"temperature": [0, 600]},
         units={"temperature": {"column": "unit", "expected": "K"}},
         provenance_columns=["source"], sparse_bins={"temperature": [0, 250, 400, 600]}, min_bin_count=2))
-    assert {"duplicate_samples", "duplicate_split_overlap", "group_split_overlap", "out_of_bounds",
+    assert {"duplicate_samples", "duplicate_split_overlap", "group_split_overlap", "incompatible_units",
             "unit_mismatch", "missing_unit", "provenance_gap", "sparse_bin"} <= codes(report)
     overlap = next(f for f in report.findings if f.code == "group_split_overlap")
     assert overlap.rows == [0, 1]
@@ -45,7 +45,7 @@ def test_invalid_measurements_and_inclusive_bounds():
 
 def test_missing_provenance_and_unit_columns_are_findings():
     report = audit(pd.DataFrame({"x": [1]}), AuditConfig(provenance_columns=["doi"], units={"x": {"column": "unit", "expected": "K"}}))
-    assert codes(report) == {"provenance_gap", "missing_unit_column"}
+    assert {"provenance_gap", "missing_unit_column"} <= codes(report)
 
 
 def test_sparse_bins_final_endpoint_counted_once_and_outside_reported():

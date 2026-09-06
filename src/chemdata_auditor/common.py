@@ -53,14 +53,14 @@ def names(value, name):
 
 def metadata(data, config):
     versions = {}
-    for package in ("numpy", "pandas", "rdkit"):
+    for package in ("numpy", "pandas", "pint", "rdkit"):
         try:
             versions[package] = version(package)
         except PackageNotFoundError:
             pass
     payload = data.to_json(orient="split", index=False, date_format="iso", double_precision=15)
     return {
-        "tool_version": "0.1.0",
+        "tool_version": "0.2.0",
         "row_reference": "zero-based row position; use df.iloc, not df.loc",
         "dataset_sha256": hashlib.sha256(payload.encode()).hexdigest(),
         "fingerprint_format": "pandas split JSON, index excluded, 15-digit float precision",
@@ -71,7 +71,26 @@ def metadata(data, config):
 
 class JsonResult:
     def to_dict(self):
-        return asdict(self)
+        return json_safe(asdict(self))
 
     def to_json(self):
         return json.dumps(self.to_dict(), indent=2, allow_nan=False) + "\n"
+
+
+def json_safe(value):
+    """Keep reports strict JSON while preserving explicit missing/nonfinite evidence."""
+    if isinstance(value, dict):
+        return {str(k): json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(v) for v in value]
+    if isinstance(value, np.generic):
+        return json_safe(value.item())
+    if isinstance(value, float) and not np.isfinite(value):
+        return None if np.isnan(value) else str(value)
+    if value is pd.NA or value is pd.NaT:
+        return None
+    if isinstance(value, (pd.Timestamp,)):
+        return value.isoformat()
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
