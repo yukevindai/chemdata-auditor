@@ -7,7 +7,7 @@ This repository brings together two complementary tools for chemistry, materials
 - **ChemData Auditor** inspects scientific datasets for leakage, duplicated samples, unit errors, impossible values, sparse regions, and provenance gaps.
 - **SciSplit** generates chemically meaningful train/test splits: composition holdout, scaffold holdout, laboratory holdout, time split, and extrapolation split.
 
-> **Status:** Initial Python implementation (v0.1.0), under review. Includes a library, CSV command-line interface, JSON reports, synthetic examples, and tests. Findings support investigation; they do not certify scientific validity.
+> **Status:** Expanded ChemData Auditor implementation (v0.2.0), under review. SciSplit currently retains its initial five-strategy API. Includes a library, CSV command-line interface, JSON reports, synthetic examples, and tests. Findings support investigation; they do not certify scientific validity.
 
 ## Quick start
 
@@ -29,6 +29,8 @@ python -m chemdata_auditor split examples/electrolytes.csv --config examples/com
 ```
 
 Installed command aliases are `chemdata audit`, `chemdata split`, and `scisplit`. Output files must be new paths. To fail a pipeline on audit errors, add `--fail-on error`; `--fail-on warning` also fails on warnings. Exit codes: `0` completed, `1` audit severity threshold reached (report still written), `2` invalid input/configuration or I/O failure.
+
+See the [complete Auditor reference](docs/AUDITOR.md) for missingness, conflicts, unit conversion, constraints, molecular similarity, multivariate density, optional plugins, and HTML/Markdown reports.
 
 See [configuration and scientific assumptions](docs/configuration.md) for every option and [review notes](docs/REVIEW.md) for implementation scope and known limits.
 
@@ -76,15 +78,19 @@ ChemData Auditor and SciSplit are intended to help researchers catch these probl
 | Check | What it should flag |
 | --- | --- |
 | Data leakage | Duplicate or declared group overlap across partitions; declared unavailable features, target-as-feature, and exact target copies. |
-| Duplicated samples | Exact repeats on all non-partition columns by default, or a configured subset of comparison columns. |
-| Unit errors | Missing unit metadata and labels differing from an explicitly configured canonical label. No dimensional inference or automatic conversion. |
+| Duplicated samples | Exact repeats, conflicting observation identities, numeric near duplicates, and canonical/similar molecular structures. |
+| Unit errors | Missing/unknown units, dimensional incompatibility, and explicit conversions of a working copy for configured numeric checks. |
 | Impossible values | Values that violate configured physical or experimental constraints, such as negative absolute temperatures or fractions outside their allowed range. |
-| Sparse regions | Low-count or empty intervals in configured one-dimensional bins, plus observations outside those bins. |
+| Sparse regions | Low-count or empty intervals and sparse multivariate neighborhoods with explicit distance scales. |
 | Provenance gaps | Missing source references, sample identifiers, laboratory metadata, measurement methods, or transformation history. |
 
 **Why it matters:** A strong model score cannot compensate for unreliable data. An audit should make potential problems visible and traceable so researchers can investigate them.
 
 Findings identify affected row positions and columns, explain the check and its assumptions, and suggest a next step. Domain-dependent checks need user-supplied constraints and metadata; a flagged value is a reason to investigate, not automatic proof of an error.
+
+### Expanded audit capabilities
+
+The Auditor also reports missing values, constant columns, suspicious identifiers, target-proxy warnings, composition totals, conditional chemical constraints, chronological violations, and weak provenance. Every result preserves affected rows, evidence, severity, actions, and reproducible configuration. Optional presets cover batteries, molecules, materials, and process data. Use `--format json`, `--format markdown`, or `--format html`.
 
 ## SciSplit
 

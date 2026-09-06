@@ -1,3 +1,5 @@
+> Historical review of v0.1.0. The expanded Auditor implementation is documented in [AUDITOR.md](AUDITOR.md); the limitations below describe the original foundation.
+
 # Initial implementation review
 
 This implementation is proposed for review on `feat/audit-and-split-foundation`, based on commit `7c7df7e5a897c46358d48cb9197319c8409810b7`. The branch is being submitted through a pull request at Kevin's request. Merging remains pending review.
