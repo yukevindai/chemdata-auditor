@@ -1,0 +1,8 @@
+{
+  "strategy": "extrapolation",
+  "columns": ["ec_fraction"],
+  "group_columns": ["sample_id"],
+  "threshold": 0.5,
+  "direction": "high",
+  "crossing_policy": "error"
+}

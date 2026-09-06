@@ -1,0 +1,7 @@
+{
+  "strategy": "scaffold",
+  "columns": ["smiles"],
+  "group_columns": ["sample_id"],
+  "test_size": 0.25,
+  "seed": 42
+}
