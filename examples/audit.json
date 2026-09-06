@@ -1,0 +1,10 @@
+{
+  "duplicate_columns": ["sample_id", "cycle", "ec_fraction", "dmc_fraction", "capacity"],
+  "group_columns": ["sample_id"],
+  "split_column": "existing_split",
+  "bounds": {"temperature": [0, null], "ec_fraction": [0, 1], "dmc_fraction": [0, 1]},
+  "units": {"temperature": {"column": "temperature_unit", "expected": "K"}},
+  "provenance_columns": ["sample_id", "lab", "measured_at", "source"],
+  "sparse_bins": {"ec_fraction": [0, 0.2, 0.4, 0.6, 0.8, 1]},
+  "min_bin_count": 3
+}

@@ -1,0 +1,6 @@
+{
+  "strategy": "laboratory",
+  "columns": ["lab"],
+  "group_columns": ["sample_id"],
+  "holdout_values": ["C"]
+}

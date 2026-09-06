@@ -1,0 +1,13 @@
+sample_id,cycle,ec_fraction,dmc_fraction,lab,measured_at,smiles,temperature,temperature_unit,capacity,source,existing_split
+cell_001,1,0.2,0.8,A,2025-01-01,c1ccccc1,298,K,100,synthetic:demo,train
+cell_001,1,0.2,0.8,A,2025-01-01,c1ccccc1,298,K,100,synthetic:demo,test
+cell_002,1,0.3,0.7,A,2025-02-01,Cc1ccccc1,298,K,99,synthetic:demo,train
+cell_002,2,0.3,0.7,A,2025-02-01,Cc1ccccc1,298,K,98,synthetic:demo,test
+cell_003,1,0.4,0.6,B,2025-03-01,c1ccncc1,298,K,97,synthetic:demo,train
+cell_003,2,0.4,0.6,B,2025-03-01,c1ccncc1,298,K,96,synthetic:demo,test
+cell_004,1,0.5,0.5,B,2025-04-01,C1CCCCC1,298,K,95,synthetic:demo,train
+cell_004,2,0.5,0.5,B,2025-04-01,C1CCCCC1,298,K,94,synthetic:demo,test
+cell_005,1,0.6,0.4,C,2025-05-01,CCO,25,C,93,synthetic:demo,train
+cell_005,2,0.6,0.4,C,2025-05-01,CCO,298,K,92,synthetic:demo,test
+cell_006,1,0.7,0.3,C,2025-06-01,CCC,-2,K,91,,train
+cell_006,2,0.7,0.3,C,2025-06-01,CCC,298,,90,synthetic:demo,test

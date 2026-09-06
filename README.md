@@ -7,7 +7,57 @@ This repository brings together two complementary tools for chemistry, materials
 - **ChemData Auditor** inspects scientific datasets for leakage, duplicated samples, unit errors, impossible values, sparse regions, and provenance gaps.
 - **SciSplit** generates chemically meaningful train/test splits: composition holdout, scaffold holdout, laboratory holdout, time split, and extrapolation split.
 
-> **Status:** Project scope and planned capabilities. This repository currently contains documentation and a license; the tools are not implemented yet.
+> **Status:** Initial Python implementation (v0.1.0), under review. Includes a library, CSV command-line interface, JSON reports, synthetic examples, and tests. Findings support investigation; they do not certify scientific validity.
+
+## Quick start
+
+Requires Python 3.10 or newer. From the repository root:
+
+```bash
+python -m pip install -e '.[dev,chem]'
+python -m pytest -q
+python examples/demo.py
+```
+
+The optional `chem` extra installs RDKit for scaffold splitting. Use `python -m pip install -e .` for the audit engine and the other four strategies.
+
+Audit the deliberately flawed synthetic example and generate a composition split:
+
+```bash
+python -m chemdata_auditor audit examples/electrolytes.csv --config examples/audit.json --output outputs/audit.json
+python -m chemdata_auditor split examples/electrolytes.csv --config examples/composition.json --output outputs/composition.json
+```
+
+Installed command aliases are `chemdata audit`, `chemdata split`, and `scisplit`. Output files must be new paths. To fail a pipeline on audit errors, add `--fail-on error`; `--fail-on warning` also fails on warnings. Exit codes: `0` completed, `1` audit severity threshold reached (report still written), `2` invalid input/configuration or I/O failure.
+
+See [configuration and scientific assumptions](docs/configuration.md) for every option and [review notes](docs/REVIEW.md) for implementation scope and known limits.
+
+### Python API
+
+```python
+import pandas as pd
+from chemdata_auditor import AuditConfig, SplitConfig, audit, split
+
+df = pd.read_csv("examples/electrolytes.csv", dtype=str, keep_default_na=False)
+report = audit(df, AuditConfig(
+    bounds={"temperature": [0, None]},
+    provenance_columns=["source", "lab"],
+))
+print(report.to_json())
+
+result = split(df, SplitConfig(
+    strategy="composition",
+    columns=["ec_fraction", "dmc_fraction"],
+    group_columns=["sample_id"],
+    test_size=0.34,
+    seed=42,
+))
+train = df.iloc[result.train].copy()
+test = df.iloc[result.test].copy()
+df["new_split"] = result.assignments()
+```
+
+Row references are **zero-based positions**, independent of the DataFrame index. Split reports include train, test, and explicitly excluded positions, actual partition sizes, overlap diagnostics, configuration, dependency versions, and a dataset fingerprint. Audit reports list checks run and skipped. CLI reports also record a SHA-256 digest of the original CSV bytes.
 
 ## Why this matters
 
@@ -21,38 +71,40 @@ ChemData Auditor and SciSplit are intended to help researchers catch these probl
 
 **Purpose:** Inspect the dataset and flag issues that could undermine scientific conclusions.
 
-### Planned checks
+### Implemented checks
 
 | Check | What it should flag |
 | --- | --- |
-| Data leakage | Overlapping sample identities or related experimental groups across splits, and features that may expose information unavailable at prediction time. |
-| Duplicated samples | Exact duplicates and likely repeated samples, including repeated records across data sources. |
-| Unit errors | Missing, inconsistent, or incompatible units and suspicious scale differences. |
+| Data leakage | Duplicate or declared group overlap across partitions; declared unavailable features, target-as-feature, and exact target copies. |
+| Duplicated samples | Exact repeats on all non-partition columns by default, or a configured subset of comparison columns. |
+| Unit errors | Missing unit metadata and labels differing from an explicitly configured canonical label. No dimensional inference or automatic conversion. |
 | Impossible values | Values that violate configured physical or experimental constraints, such as negative absolute temperatures or fractions outside their allowed range. |
-| Sparse regions | Poorly represented regions of composition, property, or experimental-condition space. |
+| Sparse regions | Low-count or empty intervals in configured one-dimensional bins, plus observations outside those bins. |
 | Provenance gaps | Missing source references, sample identifiers, laboratory metadata, measurement methods, or transformation history. |
 
 **Why it matters:** A strong model score cannot compensate for unreliable data. An audit should make potential problems visible and traceable so researchers can investigate them.
 
-Planned findings should identify the affected records or columns, explain the check and its assumptions, and suggest a next step. Domain-dependent checks will need user-supplied constraints and metadata; a flagged value is a reason to investigate, not automatic proof of an error.
+Findings identify affected row positions and columns, explain the check and its assumptions, and suggest a next step. Domain-dependent checks need user-supplied constraints and metadata; a flagged value is a reason to investigate, not automatic proof of an error.
 
 ## SciSplit
 
 **Purpose:** Generate train/test splits that match the scientific generalization question.
 
-### Planned split strategies
+### Implemented split strategies
 
 | Strategy | How it separates the data | What it tests |
 | --- | --- | --- |
-| Composition holdout | Reserve selected compositions or formulation families for testing, keeping related samples together. | Performance on unseen compositions. |
+| Composition holdout | Hold out complete groups defined by exact composition columns or supplied formulation-family labels. | Performance on unseen compositions under the supplied grouping. |
 | Scaffold holdout | Group molecules by a defined structural scaffold and hold out entire scaffold groups. | Transfer to unfamiliar molecular cores. |
 | Laboratory holdout | Hold out all records from selected laboratories. | Transfer across experimental environments and practices. |
 | Time split | Train on earlier observations and test on later observations using a declared timestamp and cutoff. | Performance on future observations. |
-| Extrapolation split | Reserve a defined region beyond the training range in selected composition, property, or condition dimensions. | Performance outside the observed training domain. |
+| Extrapolation split | Hold out values strictly above or below an explicit threshold in one numeric dimension. | Performance beyond the training range in that dimension. |
 
 **Why it matters:** Random splits can test familiarity more than scientific generalization. The split strategy should reflect the intended use of the model, and its assumptions should be explicit.
 
-Planned outputs include reproducible split assignments, the configuration used to generate them, and diagnostics for group overlap and data coverage. Related samples should stay together where the evaluation requires it. Preprocessing learned from data must be fitted on the training partition only.
+Outputs include reproducible split assignments, configuration, group overlap counts, and observed train/test ranges for time and extrapolation splits. Declared sample groups stay together, including transitive relationships across multiple grouping columns. Boundary-crossing groups cause an error unless explicitly excluded in full. Preprocessing learned from data must be fitted on the training partition only; these tools do not fit preprocessing or models.
+
+Scaffold grouping uses RDKit's [Bemis–Murcko scaffold implementation](https://www.rdkit.org/docs/source/rdkit.Chem.Scaffolds.MurckoScaffold.html). It ignores chirality, groups all acyclic molecules together, and rejects invalid or disconnected SMILES. Standardization of salts and tautomers must be an explicit upstream decision.
 
 ## How the tools fit together
 

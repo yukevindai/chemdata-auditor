@@ -1,0 +1,7 @@
+{
+  "strategy": "composition",
+  "columns": ["ec_fraction", "dmc_fraction"],
+  "group_columns": ["sample_id"],
+  "test_size": 0.34,
+  "seed": 42
+}
