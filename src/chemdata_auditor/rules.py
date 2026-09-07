@@ -48,7 +48,7 @@ def validate_predicate(rule, depth=0):
                     raise ValueError("Numeric predicate constants cannot be booleans.")
                 try:
                     converted = float(value)
-                except (ValueError, TypeError) as exc:
+                except (ValueError, TypeError, OverflowError) as exc:
                     raise ValueError("Numeric predicate constants must be finite numbers.") from exc
                 finite_number(converted, "Numeric predicate constant")
         if rule["op"] not in {"in", "not_in"} and isinstance(rule["value"], list):
