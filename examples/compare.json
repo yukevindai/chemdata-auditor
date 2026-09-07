@@ -1,0 +1,139 @@
+{
+  "strategies": {
+    "Random rows": {
+      "strategy": "random",
+      "test_size": 0.2,
+      "validation_size": 0.2,
+      "seed": 42
+    },
+    "Formulation": {
+      "strategy": "formulation",
+      "columns": [
+        "formulation"
+      ],
+      "group_columns": [
+        "sample_id"
+      ],
+      "validation_size": 0.2
+    },
+    "Composition": {
+      "strategy": "composition",
+      "columns": [
+        "ec_fraction",
+        "dmc_fraction"
+      ],
+      "group_columns": [
+        "sample_id"
+      ],
+      "validation_size": 0.2
+    },
+    "Molecular scaffold": {
+      "strategy": "scaffold",
+      "columns": [
+        "smiles"
+      ],
+      "group_columns": [
+        "sample_id"
+      ],
+      "validation_size": 0.2
+    },
+    "Publication": {
+      "strategy": "publication",
+      "columns": [
+        "publication"
+      ],
+      "group_columns": [
+        "sample_id"
+      ],
+      "validation_values": [
+        "synthetic:paperB"
+      ],
+      "holdout_values": [
+        "synthetic:paperC"
+      ]
+    },
+    "Laboratory": {
+      "strategy": "laboratory",
+      "columns": [
+        "lab"
+      ],
+      "group_columns": [
+        "sample_id"
+      ],
+      "validation_values": [
+        "B"
+      ],
+      "holdout_values": [
+        "C"
+      ]
+    },
+    "Temporal": {
+      "strategy": "temporal",
+      "columns": [
+        "measured_at"
+      ],
+      "group_columns": [
+        "sample_id"
+      ],
+      "validation_cutoff": "2025-02-01",
+      "cutoff": "2025-04-01"
+    },
+    "Cluster": {
+      "strategy": "cluster",
+      "columns": [
+        "ec_fraction",
+        "dmc_fraction"
+      ],
+      "cluster_scales": {
+        "ec_fraction": 0.1,
+        "dmc_fraction": 0.1
+      },
+      "n_clusters": 3,
+      "group_columns": [
+        "sample_id"
+      ],
+      "validation_size": 0.2
+    },
+    "Extrapolation": {
+      "strategy": "extrapolation",
+      "columns": [
+        "ec_fraction"
+      ],
+      "threshold": 0.5,
+      "validation_threshold": 0.3,
+      "group_columns": [
+        "sample_id"
+      ]
+    }
+  },
+  "diagnostics": {
+    "group_columns": [
+      "sample_id"
+    ],
+    "duplicate_columns": [
+      "sample_id",
+      "cycle",
+      "capacity"
+    ],
+    "near_duplicates": {
+      "ec_fraction": 0.001,
+      "dmc_fraction": 0.001
+    },
+    "numeric_columns": [
+      "ec_fraction",
+      "capacity"
+    ],
+    "categorical_columns": [
+      "lab"
+    ],
+    "domain_columns": [
+      "ec_fraction",
+      "dmc_fraction"
+    ],
+    "domain_scales": {
+      "ec_fraction": 0.1,
+      "dmc_fraction": 0.1
+    },
+    "domain_distance_threshold": 0.5
+  }
+}

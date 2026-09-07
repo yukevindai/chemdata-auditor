@@ -1,0 +1,9 @@
+{
+  "group_columns": ["sample_id"],
+  "duplicate_columns": ["sample_id", "cycle", "capacity"],
+  "numeric_columns": ["ec_fraction", "capacity"],
+  "categorical_columns": ["lab"],
+  "domain_columns": ["ec_fraction", "dmc_fraction"],
+  "domain_scales": {"ec_fraction": 0.1, "dmc_fraction": 0.1},
+  "domain_distance_threshold": 0.5
+}
