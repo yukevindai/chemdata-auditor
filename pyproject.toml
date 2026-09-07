@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chemdata-auditor"
-version = "0.2.0"
+version = "0.3.0"
 description = "Explicit dataset audits and scientific train/test splits"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
-dependencies = ["numpy>=1.24", "pandas>=2.0", "pint>=0.24"]
+dependencies = ["numpy>=1.24", "pandas>=2.0", "pint>=0.24", "scikit-learn>=1.3"]
 
 [project.optional-dependencies]
 chem = ["rdkit>=2023.9"]

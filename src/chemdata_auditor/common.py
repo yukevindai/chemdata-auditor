@@ -53,14 +53,14 @@ def names(value, name):
 
 def metadata(data, config):
     versions = {}
-    for package in ("numpy", "pandas", "pint", "rdkit"):
+    for package in ("numpy", "pandas", "pint", "rdkit", "scikit-learn"):
         try:
             versions[package] = version(package)
         except PackageNotFoundError:
             pass
     payload = data.to_json(orient="split", index=False, date_format="iso", double_precision=15)
     return {
-        "tool_version": "0.2.0",
+        "tool_version": "0.3.0",
         "row_reference": "zero-based row position; use df.iloc, not df.loc",
         "dataset_sha256": hashlib.sha256(payload.encode()).hexdigest(),
         "fingerprint_format": "pandas split JSON, index excluded, 15-digit float precision",

@@ -5,9 +5,9 @@ Building tools to make scientific machine learning more trustworthy: audit the d
 This repository brings together two complementary tools for chemistry, materials science, and chemical engineering:
 
 - **ChemData Auditor** inspects scientific datasets for leakage, duplicated samples, unit errors, impossible values, sparse regions, and provenance gaps.
-- **SciSplit** generates chemically meaningful train/test splits: composition holdout, scaffold holdout, laboratory holdout, time split, and extrapolation split.
+- **SciSplit** generates train/validation/test partitions using formulation, composition, scaffold, publication, laboratory, temporal, cluster, and extrapolation holdouts, with random allocation as a comparison baseline.
 
-> **Status:** Expanded ChemData Auditor implementation (v0.2.0), under review. SciSplit currently retains its initial five-strategy API. Includes a library, CSV command-line interface, JSON reports, synthetic examples, and tests. Findings support investigation; they do not certify scientific validity.
+> **Status:** Expanded toolkit implementation (v0.3.0), under review. ChemData Auditor and SciSplit cover the dataset-audit and scientific-evaluation workflows described below. Includes a library, CSV command-line interface, JSON reports, synthetic examples, and tests. Findings support investigation; they do not certify scientific validity.
 
 ## Quick start
 
@@ -19,7 +19,7 @@ python -m pytest -q
 python examples/demo.py
 ```
 
-The optional `chem` extra installs RDKit for scaffold splitting. Use `python -m pip install -e .` for the audit engine and the other four strategies.
+The optional `chem` extra installs RDKit for scaffold splitting. Use `python -m pip install -e .` for the audit engine and the strategies that do not use molecular structures.
 
 Audit the deliberately flawed synthetic example and generate a composition split:
 
@@ -31,6 +31,8 @@ python -m chemdata_auditor split examples/electrolytes.csv --config examples/com
 Installed command aliases are `chemdata audit`, `chemdata split`, and `scisplit`. Output files must be new paths. To fail a pipeline on audit errors, add `--fail-on error`; `--fail-on warning` also fails on warnings. Exit codes: `0` completed, `1` audit severity threshold reached (report still written), `2` invalid input/configuration or I/O failure.
 
 See the [complete Auditor reference](docs/AUDITOR.md) for missingness, conflicts, unit conversion, constraints, molecular similarity, multivariate density, optional plugins, and HTML/Markdown reports.
+
+See the [SciSplit reference](docs/SCISPLIT.md) for three-way partitions, strategy comparison, overlap, distribution shift, and training-domain diagnostics.
 
 See [configuration and scientific assumptions](docs/configuration.md) for every option and [review notes](docs/REVIEW.md) for implementation scope and known limits.
 
@@ -51,15 +53,17 @@ result = split(df, SplitConfig(
     strategy="composition",
     columns=["ec_fraction", "dmc_fraction"],
     group_columns=["sample_id"],
-    test_size=0.34,
+    test_size=0.2,
+    validation_size=0.2,
     seed=42,
 ))
 train = df.iloc[result.train].copy()
+validation = df.iloc[result.validation].copy()
 test = df.iloc[result.test].copy()
 df["new_split"] = result.assignments()
 ```
 
-Row references are **zero-based positions**, independent of the DataFrame index. Split reports include train, test, and explicitly excluded positions, actual partition sizes, overlap diagnostics, configuration, dependency versions, and a dataset fingerprint. Audit reports list checks run and skipped. CLI reports also record a SHA-256 digest of the original CSV bytes.
+Row references are **zero-based positions**, independent of the DataFrame index. Split reports include train, validation, test, and explicitly excluded positions, actual partition sizes, overlap diagnostics, configuration, dependency versions, and a dataset fingerprint. Audit reports list checks run and skipped. CLI reports also record a SHA-256 digest of the original CSV bytes.
 
 ## Why this matters
 
@@ -94,23 +98,37 @@ The Auditor also reports missing values, constant columns, suspicious identifier
 
 ## SciSplit
 
-**Purpose:** Generate train/test splits that match the scientific generalization question.
+**Purpose:** Generate and compare train/validation/test designs that match the scientific generalization question.
 
 ### Implemented split strategies
 
 | Strategy | How it separates the data | What it tests |
 | --- | --- | --- |
-| Composition holdout | Hold out complete groups defined by exact composition columns or supplied formulation-family labels. | Performance on unseen compositions under the supplied grouping. |
+| Formulation holdout | Hold out declared formulation identities or families. | Transfer to unseen formulations. |
+| Composition holdout | Hold out joint composition keys with decimal normalization and optional explicit rounding. | Performance on unseen compositions under the declared representation. |
 | Scaffold holdout | Group molecules by a defined structural scaffold and hold out entire scaffold groups. | Transfer to unfamiliar molecular cores. |
+| Publication holdout | Hold out complete source/publication groups. | Transfer across reported studies. |
 | Laboratory holdout | Hold out all records from selected laboratories. | Transfer across experimental environments and practices. |
 | Time split | Train on earlier observations and test on later observations using a declared timestamp and cutoff. | Performance on future observations. |
-| Extrapolation split | Hold out values strictly above or below an explicit threshold in one numeric dimension. | Performance beyond the training range in that dimension. |
+| Cluster holdout | Hold out K-means clusters in explicitly scaled covariate space. | Transfer across defined covariate clusters. |
+| Extrapolation split | Hold out values beyond a threshold or a multivariate box. | Performance beyond declared numeric training/development regions. |
+| Random baseline | Seeded row or independent-group allocation. | Comparison within the sampled population. |
 
 **Why it matters:** Random splits can test familiarity more than scientific generalization. The split strategy should reflect the intended use of the model, and its assumptions should be explicit.
 
 Outputs include reproducible split assignments, configuration, group overlap counts, and observed train/test ranges for time and extrapolation splits. Declared sample groups stay together, including transitive relationships across multiple grouping columns. Boundary-crossing groups cause an error unless explicitly excluded in full. Preprocessing learned from data must be fitted on the training partition only; these tools do not fit preprocessing or models.
 
 Scaffold grouping uses RDKit's [Bemis–Murcko scaffold implementation](https://www.rdkit.org/docs/source/rdkit.Chem.Scaffolds.MurckoScaffold.html). It ignores chirality, groups all acyclic molecules together, and rejects invalid or disconnected SMILES. Standardization of salts and tautomers must be an explicit upstream decision.
+
+### Compare evaluation designs
+
+```bash
+python -m chemdata_auditor split examples/electrolytes.csv --config examples/split-three-way.json --output outputs/three-way.json --assignments outputs/assignments.csv
+python -m chemdata_auditor compare examples/electrolytes.csv --config examples/compare.json --output outputs/comparison.html --format html
+python -m chemdata_auditor diagnose examples/electrolytes.csv --config examples/diagnostics.json --split-report outputs/three-way.json --output outputs/diagnostics.md --format markdown
+```
+
+Every split explains its generalization scope and limitations. Diagnostics measure exact/group/near-duplicate overlap across all partition pairs, numeric and categorical distribution changes, and geometric distance from the training domain. Training-domain ranges, scales, and distance calibration use training rows only. Optional similarity grouping keeps related numeric or molecular samples together. Comparison reports preserve infeasible designs as explicit errors and provide no invented model-performance score.
 
 ## How the tools fit together
 

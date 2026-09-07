@@ -1,0 +1,17 @@
+{
+  "strategy": "composition",
+  "columns": ["ec_fraction", "dmc_fraction"],
+  "group_columns": ["sample_id"],
+  "test_size": 0.2,
+  "validation_size": 0.2,
+  "seed": 42,
+  "diagnostics": {
+    "duplicate_columns": ["sample_id", "cycle", "capacity"],
+    "near_duplicates": {"ec_fraction": 0.001, "dmc_fraction": 0.001},
+    "numeric_columns": ["ec_fraction", "capacity"],
+    "categorical_columns": ["lab"],
+    "domain_columns": ["ec_fraction", "dmc_fraction"],
+    "domain_scales": {"ec_fraction": 0.1, "dmc_fraction": 0.1},
+    "domain_distance_threshold": 0.5
+  }
+}
