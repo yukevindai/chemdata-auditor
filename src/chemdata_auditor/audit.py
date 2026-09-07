@@ -210,9 +210,10 @@ def audit(data, config=None):
     else:
         skipped["units"] = "No unit rules configured."
 
-    if cfg.provenance_columns:
+    provenance = list(dict.fromkeys([*cfg.provenance_columns, *cfg.provenance_patterns]))
+    if provenance:
         ran.append("provenance")
-        for col in cfg.provenance_columns:
+        for col in provenance:
             absent = missing(data[col]) if col in data else np.ones(len(data), bool)
             if np.any(absent):
                 add("provenance_gap", "warning", [col], absent, "Required provenance metadata is missing or blank.",

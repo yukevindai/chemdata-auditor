@@ -42,6 +42,15 @@ def validate_predicate(rule, depth=0):
         vals = rule["value"] if isinstance(rule["value"], list) else [rule["value"]]
         if any(not isinstance(v, (str, int, float, bool)) for v in vals):
             raise ValueError("Predicate values must be scalar strings or numbers.")
+        if rule.get("kind", "numeric") == "numeric" and rule["op"] in {*OPS, "in", "not_in"}:
+            for value in vals:
+                if isinstance(value, bool):
+                    raise ValueError("Numeric predicate constants cannot be booleans.")
+                try:
+                    converted = float(value)
+                except (ValueError, TypeError) as exc:
+                    raise ValueError("Numeric predicate constants must be finite numbers.") from exc
+                finite_number(converted, "Numeric predicate constant")
         if rule["op"] not in {"in", "not_in"} and isinstance(rule["value"], list):
             raise ValueError("Only membership predicates accept list values.")
 

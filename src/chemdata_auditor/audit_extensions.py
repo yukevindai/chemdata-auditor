@@ -133,7 +133,7 @@ def normalized_units(data, cfg, add):
 
 def extended_checks(data, normalized, cfg, add, ran, skipped):
     require(data, cfg.numeric_columns + cfg.identity_columns + cfg.conflict_columns + cfg.identifier_columns
-            + cfg.density_columns + list(cfg.near_duplicates) + list(cfg.provenance_patterns)
+            + cfg.density_columns + list(cfg.near_duplicates)
             + ([cfg.smiles_column] if cfg.smiles_column else []))
     if cfg.check_missing:
         ran.append("missing_values")
