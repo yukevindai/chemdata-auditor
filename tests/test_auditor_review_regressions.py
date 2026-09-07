@@ -12,7 +12,7 @@ def test_missing_patterned_provenance_preserves_report(required):
     assert "provenance" in report.checks_run
 
 
-@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf"), "NaN", "Infinity"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf"), "NaN", "Infinity", 10**400])
 @pytest.mark.parametrize("op", ["ge", "in"])
 def test_nonfinite_predicate_constants_rejected(value, op):
     with pytest.raises(ValueError, match="finite"):
