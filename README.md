@@ -1,4 +1,17 @@
+<div align="center">
+
 # ChemData Auditor + SciSplit
+
+**Audit the data. Test the generalization.**
+
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+[![MIT](https://img.shields.io/badge/License-MIT-22c55e)](LICENSE)
+
+[Quick start](#quick-start) · [Python API](#python-api) · [Audit checks](#chemdata-auditor) · [Split strategies](#scisplit)
+
+</div>
+
+---
 
 Building tools to make scientific machine learning more trustworthy: audit the data, design meaningful splits, and understand what a model's performance actually tells you.
 
@@ -8,6 +21,25 @@ This repository brings together two complementary tools for chemistry, materials
 - **SciSplit** generates chemically meaningful train/test splits: composition holdout, scaffold holdout, laboratory holdout, time split, and extrapolation split.
 
 > **Status:** Expanded ChemData Auditor implementation (v0.2.0), under review. SciSplit currently retains its initial five-strategy API. Includes a library, CSV command-line interface, JSON reports, synthetic examples, and tests. Findings support investigation; they do not certify scientific validity.
+
+
+## At a glance
+
+| Tool | Question it helps answer | Deliverable |
+| :--- | :--- | :--- |
+| **ChemData Auditor** | What could make this dataset misleading? | Findings with severity, affected rows, evidence, and review actions. |
+| **SciSplit** | What kind of unseen data should the model face? | Reproducible train/test assignments and overlap diagnostics. |
+
+```mermaid
+flowchart TD
+    A["Scientific dataset"] --> B["Audit quality and provenance"]
+    B --> C{"Findings require changes?"}
+    C -- Yes --> D["Review data and configuration"]
+    D --> B
+    C -- No --> E["Choose scientific holdout"]
+    E --> F["Generate and audit partitions"]
+    F --> G["Evaluate models with documented assumptions"]
+```
 
 ## Quick start
 
